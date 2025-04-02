@@ -61,6 +61,7 @@ from . import (
     plotEscapecurve,
     plotRotcurve,
     verticalPotential,
+    MoccaTimeTablePotential,
 )
 
 #
@@ -211,6 +212,14 @@ AnyAxisymmetricRazorThinDiskPotential = (
     AnyAxisymmetricRazorThinDiskPotential.AnyAxisymmetricRazorThinDiskPotential
 )
 AnySphericalPotential = AnySphericalPotential.AnySphericalPotential
+
+#############################
+#############################
+MoccaTimeTablePotential = MoccaTimeTablePotential.MoccaTimeTablePotential
+#############################
+#############################
+
+
 # Wrappers
 DehnenSmoothWrapperPotential = DehnenSmoothWrapperPotential.DehnenSmoothWrapperPotential
 SolidBodyRotationWrapperPotential = (

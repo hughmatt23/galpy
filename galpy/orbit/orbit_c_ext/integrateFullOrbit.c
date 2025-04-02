@@ -10,6 +10,7 @@
 #include <math.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
+#include <gsl/gsl_interp2d.h>
 #include <bovy_coords.h>
 #include <bovy_symplecticode.h>
 #include <leung_dop853.h>
@@ -65,8 +66,8 @@ void parse_leapFuncArgs_Full(int npot,
 			     double ** pot_args,
            tfuncs_type_arr * pot_tfuncs){
   int ii,jj,kk;
-  int nR, nz, nr;
-  double * Rgrid, * zgrid, * potGrid_splinecoeffs;
+  int nR, nz, nr, nt;
+  double * Rgrid, * zgrid, * potGrid_splinecoeffs, * potGrid, * tgrid, * rgrid, * massGrid;
   init_potentialArgs(npot,potentialArgs);
   for (ii=0; ii < npot; ii++){
     switch ( *(*pot_type)++ ) {
@@ -234,7 +235,7 @@ void parse_leapFuncArgs_Full(int npot,
       potentialArgs->ntfuncs= 0;
       potentialArgs->requiresVelocity= false;
       break;
-    case 15: //PowerSphericalwCutoffPotential, 5 arguments
+    case 15: //PowerSphericalwCutoffPotential, 3 arguments
       potentialArgs->potentialEval= &PowerSphericalPotentialwCutoffEval;
       potentialArgs->Rforce= &PowerSphericalPotentialwCutoffRforce;
       potentialArgs->zforce= &PowerSphericalPotentialwCutoffzforce;
@@ -243,7 +244,7 @@ void parse_leapFuncArgs_Full(int npot,
       //potentialArgs->R2deriv= &PowerSphericalPotentialR2deriv;
       //potentialArgs->planarphi2deriv= &ZeroForce;
       //potentialArgs->planarRphideriv= &ZeroForce;
-      potentialArgs->nargs= 5;
+      potentialArgs->nargs= 3;
       potentialArgs->ntfuncs= 0;
       potentialArgs->requiresVelocity= false;
       break;
@@ -530,7 +531,133 @@ void parse_leapFuncArgs_Full(int npot,
       potentialArgs->ntfuncs= 0;
       potentialArgs->requiresVelocity= false;
       break;
-//////////////////////////////// WRAPPERS /////////////////////////////////////
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////// MY POTENTIAL ////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    case 41: // MoccaTimeTablePotential
+      // Set up 2D spline (time + radius) in potentialArgs
+      // potentialArgs->ninterp2d = 1; // We are using a single 2D spline
+      // Set up 2D spline (time + radius) in potentialArgs
+      potentialArgs->i2d = (interp_2d *)malloc(sizeof(interp_2d*));  // Allocate 2D interpolation structure
+      potentialArgs->accx = (gsl_interp_accel *)malloc( sizeof ( gsl_interp_accel * ) );
+      potentialArgs->accy = (gsl_interp_accel *)malloc( sizeof ( gsl_interp_accel * ) );
+      potentialArgs->accx = gsl_interp_accel_alloc();  // Accelerator for radius
+      potentialArgs->accy = gsl_interp_accel_alloc();  // Accelerator for time
+
+      // Read the number of radius points (nr) and time points (nt) from pot_args
+      nr = (int) *(*pot_args)++;  // First value in pot_args: number of radius points
+      nt = (int) *(*pot_args)++;  // Second value in pot_args: number of time points
+
+      rgrid= (double *) malloc ( nr * sizeof ( double ) );
+      tgrid= (double *) malloc ( nt * sizeof ( double ) );
+      potGrid= (double *) malloc ( nr * nt * sizeof ( double ) );
+      for (kk=0; kk < nr; kk++)
+	*(rgrid+kk)= *(*pot_args)++;
+      for (kk=0; kk < nt; kk++)
+	*(tgrid+kk)= *(*pot_args)++;
+      for (kk=0; kk < nr; kk++)
+  put_row(potGrid,kk,*pot_args+kk*nt,nt);
+      *pot_args+= nr*nt;
+
+
+
+      // printf("pot_args (nr) %d\n", nr);
+      // fflush(stdout);
+      // printf("pot_args+1 (nt) %d\n", nt);
+      // fflush(stdout);
+      // printf("pot_args+2 (r_Grid) %f\n", rgrid[0]);
+      // fflush(stdout);
+      // printf("pot_args+2+nr (t_grid) %f\n", tgrid[1]);
+      // fflush(stdout);
+      // printf("pot_args+2+nr+nt (potentials) %f\n", potGrid[1]);
+      // fflush(stdout);
+
+      // Initialize 2D spline
+      potentialArgs->i2d = interp_2d_alloc(nt,nr);
+      interp_2d_init(
+          potentialArgs->i2d,
+          tgrid,        // Time array starts here
+          rgrid,             // Radius array starts here
+          potGrid,   // Potential values (flattened) start here
+          INTERP_2D_LINEAR);
+
+
+      potentialArgs->nspline1d= 0;
+      potentialArgs->interp1d= (gsl_interp **)malloc(sizeof(gsl_interp *));
+      potentialArgs->acc1d= (gsl_interp_accel **)malloc(sizeof(gsl_interp_accel *));
+      // Set up 1D spline for mass (kepAmp) interpolation
+      *potentialArgs->interp1d = gsl_interp_alloc(gsl_interp_linear, nt);
+      *potentialArgs->acc1d = gsl_interp_accel_alloc();
+
+      massGrid= (double *) malloc ( nt * sizeof ( double ) );
+      for (kk=0; kk < nt; kk++){
+        *(massGrid+kk)= *(*pot_args)++;
+      }
+
+
+      // Initialize the mass spline
+      gsl_interp_init(
+          *potentialArgs->interp1d,
+          tgrid,                 // Time array for mass interpolation
+          massGrid,            // Mass (kepAmp) values
+          nt);
+
+      // Advance pot_args to skip over radius, time, potential, and mass values
+      // *pot_args += 2 + nr + nt + (nr * nt) + nt;
+
+      // printf("pot_args (rmin) %f\n", **pot_args);
+      // fflush(stdout);
+      // printf("pot_args+1 (rmax) %f\n", *(*pot_args+1));
+      // fflush(stdout);
+      // printf("pot_args+2 (nt) %f\n", *(*pot_args+2));
+      // fflush(stdout);
+      // printf("pot_args+3 (t[0]) %f\n", *(*pot_args+3));
+      // fflush(stdout);
+      // printf("pot_args+4 (t[1]) %f\n", *(*pot_args+4));
+      // fflush(stdout);
+      // printf("pot_args+5 (t[2]) %f\n", *(*pot_args+5));
+      // fflush(stdout);
+      // printf("pot_args+6 (kepAmp[0]) %f\n", *(*pot_args+6));
+      // fflush(stdout);
+      // printf("pot_args+7 (kepAmp[1]) %f\n", *(*pot_args+7));
+      // fflush(stdout);
+      // printf("pot_args+8 (kepAmp[2]) %f\n", *(*pot_args+8));
+      // fflush(stdout);
+
+
+
+      // Bind functions for potential evaluation, forces, and derivatives
+      potentialArgs->potentialEval = &SphericalPotentialEval;  // General spherical evaluator
+      potentialArgs->Rforce = &SphericalPotentialRforce;
+      potentialArgs->zforce = &SphericalPotentialzforce;
+      potentialArgs->phitorque = &ZeroForce;  // No azimuthal dependence
+      potentialArgs->dens = &SphericalPotentialDens;
+
+      // Bind your specific MoccaTimeTablePotential functions
+      potentialArgs->revaluate = &MoccaTimeTablePotentialrevaluate;
+      potentialArgs->rforce = &MoccaTimeTablePotentialrforce;
+      potentialArgs->r2deriv = &MoccaTimeTablePotentialr2deriv;
+      potentialArgs->rdens = &MoccaTimeTablePotentialrdens;
+
+      // Specify other properties
+      potentialArgs->nargs = 4+2*nt;  // Update this as per your potential's argument count
+      potentialArgs->ntfuncs = 0;  // No time functions
+      potentialArgs->requiresVelocity = false;  // Velocity-independent potential
+
+      // Cleanup
+      free(rgrid);
+      free(tgrid);
+      free(potGrid);
+      free(massGrid);
+
+      break;
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////      
+
+
+  //////////////////////////////// WRAPPERS /////////////////////////////////////
     case -1: //DehnenSmoothWrapperPotential
       potentialArgs->potentialEval= &DehnenSmoothWrapperPotentialEval;
       potentialArgs->Rforce= &DehnenSmoothWrapperPotentialRforce;

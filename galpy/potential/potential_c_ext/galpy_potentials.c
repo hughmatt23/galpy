@@ -20,24 +20,33 @@ void init_potentialArgs(int npot, struct potentialArg * potentialArgs){
 void free_potentialArgs(int npot, struct potentialArg * potentialArgs){
   int ii, jj;
   for (ii=0; ii < npot; ii++) {
-    if ( (potentialArgs+ii)->i2d )
+    if ( (potentialArgs+ii)->i2d ){
       interp_2d_free((potentialArgs+ii)->i2d) ;
-    if ( (potentialArgs+ii)->accx )
+    }
+    if ( (potentialArgs+ii)->accx ){
       gsl_interp_accel_free ((potentialArgs+ii)->accx);
-    if ( (potentialArgs+ii)->accy )
+    }
+    if ( (potentialArgs+ii)->accy ){
       gsl_interp_accel_free ((potentialArgs+ii)->accy);
-    if ( (potentialArgs+ii)->i2drforce )
+    }
+    if ( (potentialArgs+ii)->i2drforce ){
       interp_2d_free((potentialArgs+ii)->i2drforce) ;
-    if ( (potentialArgs+ii)->accxrforce )
+    }
+    if ( (potentialArgs+ii)->accxrforce ){
       gsl_interp_accel_free ((potentialArgs+ii)->accxrforce);
-    if ( (potentialArgs+ii)->accyrforce )
+    }
+    if ( (potentialArgs+ii)->accyrforce ){
       gsl_interp_accel_free ((potentialArgs+ii)->accyrforce);
-    if ( (potentialArgs+ii)->i2dzforce )
+    }
+    if ( (potentialArgs+ii)->i2dzforce ){
       interp_2d_free((potentialArgs+ii)->i2dzforce) ;
-    if ( (potentialArgs+ii)->accxzforce )
+    }
+    if ( (potentialArgs+ii)->accxzforce ){
       gsl_interp_accel_free ((potentialArgs+ii)->accxzforce);
-    if ( (potentialArgs+ii)->accyzforce )
+    }
+    if ( (potentialArgs+ii)->accyzforce ){
       gsl_interp_accel_free ((potentialArgs+ii)->accyzforce);
+    }
     if ( (potentialArgs+ii)->wrappedPotentialArg ) {
       free_potentialArgs((potentialArgs+ii)->nwrapped,
 			 (potentialArgs+ii)->wrappedPotentialArg);
@@ -49,8 +58,9 @@ void free_potentialArgs(int npot, struct potentialArg * potentialArgs){
       free((potentialArgs+ii)->spline1d);
     }
     if ( (potentialArgs+ii)->acc1d ) {
-      for (jj=0; jj < (potentialArgs+ii)->nspline1d; jj++)
-	gsl_interp_accel_free (*((potentialArgs+ii)->acc1d+jj));
+      for (jj=0; jj < (potentialArgs+ii)->nspline1d; jj++){
+	      gsl_interp_accel_free (*((potentialArgs+ii)->acc1d+jj));
+      }
       free((potentialArgs+ii)->acc1d);
     }
     free((potentialArgs+ii)->args);

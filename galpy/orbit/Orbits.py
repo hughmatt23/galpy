@@ -32,13 +32,8 @@ from ..potential import (
     evaluatePotentials,
 )
 from ..potential import flatten as flatten_potential
-from ..potential import (
-    rE,
-    rl,
-    toPlanarPotential,
-)
+from ..potential import rE, rl, toPlanarPotential
 from ..potential.DissipativeForce import _isDissipative
-from ..potential.plotEscapecurve import _INF
 from ..potential.Potential import _check_c
 from ..util import conversion, coords, galpyWarning, galpyWarningVerbose, plot
 from ..util._optional_deps import (
@@ -478,46 +473,6 @@ class Orbit:
                 raise ImportError(
                     "Orbit initialization using an astropy SkyCoord requires astropy >3.0"
                 )
-            # Print warning when SkyCoord doesn't come with values for galcen_distance, z_sun, and galcen_v_sun (issue #709)
-            if (
-                vxvv.z_sun is None
-                or vxvv.galcen_distance is None
-                or vxvv.galcen_v_sun is None
-            ):
-                apy_coordframe_warning = "Supplied SkyCoord does not contain ("
-                apy_coordframe_warning_keywords = ""
-                print_apy_coordframe_warning = 0
-                print_apy_coordframe_warning_dict = {
-                    "are": "is",
-                    "these": "this",
-                    "were": "was",
-                    "values": "value",
-                }
-                if vxvv.galcen_distance is None and ro is None:
-                    apy_coordframe_warning += "galcen_distance, "
-                    apy_coordframe_warning_keywords += "ro, "
-                    print_apy_coordframe_warning += 1
-                if vxvv.z_sun is None and zo is None:
-                    apy_coordframe_warning += "z_sun, "
-                    apy_coordframe_warning_keywords += "zo, "
-                    print_apy_coordframe_warning += 1
-                if vxvv.galcen_v_sun is None and solarmotion is None:
-                    apy_coordframe_warning += "galcen_v_sun, "
-                    apy_coordframe_warning_keywords += "vo, solarmotion, "
-                    print_apy_coordframe_warning += 1
-                if print_apy_coordframe_warning:
-                    if print_apy_coordframe_warning > 1:
-                        print_apy_coordframe_warning_dict = {
-                            "are": "are",
-                            "these": "these",
-                            "were": "were",
-                            "values": "values",
-                        }
-                    warnings.warn(
-                        apy_coordframe_warning[:-2]
-                        + f") and {print_apy_coordframe_warning_dict['these']} {print_apy_coordframe_warning_dict['were']} not explicitly set in the Orbit initialization using the keywords ({apy_coordframe_warning_keywords[:-2]}); {print_apy_coordframe_warning_dict['these']} {print_apy_coordframe_warning_dict['are']} required for Orbit initialization; proceeding with default {print_apy_coordframe_warning_dict['values']}",
-                        galpyWarning,
-                    )
             if zo is None and not vxvv.z_sun is None:
                 zo = vxvv.z_sun.to(units.kpc).value
             elif not vxvv.z_sun is None:
@@ -861,7 +816,7 @@ class Orbit:
 
         """
         if not _APY_LOADED:  # pragma: no cover
-            raise ImportError("astropy needs to be installed to use Orbit.from_name")
+            raise ImportError("astropy needs to be installed to use " "Orbit.from_name")
         _load_named_objects()
         _update_keys_named_objects()
         # Stack coordinate-transform parameters, so they can be changed...
@@ -1383,16 +1338,6 @@ class Orbit:
             )
         return method
 
-    @staticmethod
-    def _check_array_evenlyspaced(t, method):  # for ODE integrators
-        if method in ["odeint", "dop853", "dop853_c"]:
-            return True
-        else:
-            diffs = numpy.diff(t, axis=-1)
-            return numpy.all(
-                numpy.isclose(diffs, numpy.expand_dims(diffs[..., 0], axis=-1))
-            )
-
     def integrate(
         self,
         t,
@@ -1409,7 +1354,7 @@ class Orbit:
         Parameters
         ----------
         t : list, numpy.ndarray or Quantity
-            List of equispaced times at which to compute the orbit. The initial condition is t[0]. (note that for method='odeint', method='dop853', and method='dop853_c', the time array can be non-equispaced).
+            List of equispaced times at which to compute the orbit. The initial condition is t[0].
         pot : Potential, DissipativeForce or list of such instances
             Gravitational field to integrate the orbit in.
         method : str, optional
@@ -1457,15 +1402,8 @@ class Orbit:
             t = conversion.parse_time(t, ro=self._ro, vo=self._vo)
         else:
             self._integrate_t_asQuantity = False
-        # Check that t is evenly spaced if not using odeint
-        if not self._check_array_evenlyspaced(t, method):
-            raise ValueError(
-                f"Input time array must be equally spaced for method {method}, use method='dop853_c', method='dop853', or method='odeint' instead for non-equispaced time arrays"
-            )
-
         if _APY_LOADED and not dt is None and isinstance(dt, units.Quantity):
             dt = conversion.parse_time(dt, ro=self._ro, vo=self._vo)
-
         from ..potential import MWPotential
 
         if pot == MWPotential:
@@ -1633,7 +1571,7 @@ class Orbit:
         Parameters
         ----------
         psi : list, numpy.ndarray or Quantity
-            Equispaced list of increment angles over which to integrate [increments wrt initial angle].  (note that for method='odeint', method='dop853', and method='dop853_c', the psi array can be non-equispaced).
+            Equispaced list of increment angles over which to integrate [increments wrt initial angle].
         pot : Potential, DissipativeForce or list of such instances
             Gravitational field to integrate the orbit in.
         surface : str, optional
@@ -1677,11 +1615,6 @@ class Orbit:
         # Parse psi
         if _APY_LOADED and isinstance(psi, units.Quantity):
             psi = conversion.parse_angle(psi)
-        # Check that psi is evenly spaced
-        if not self._check_array_evenlyspaced(psi, method):
-            raise ValueError(
-                f"Input psi array must be equally spaced for method {method}, use method='dop853_c', method='dop853', or method='odeint' instead for non-equispaced psi arrays"
-            )
         if _APY_LOADED and isinstance(t0, units.Quantity):
             t0 = conversion.parse_time(t0, ro=self._ro, vo=self._vo)
         self._integrate_t_asQuantity = False
@@ -1764,9 +1697,7 @@ class Orbit:
             (numpy.roll(self.t, -1, axis=1) - self.t)[:, :-1]
             * (numpy.roll(self._psi.T, -1, axis=0) - self._psi.T)[:-1].T
             > 0.0
-        ), (
-            "SOS integration failed (time does not monotonically increase with increasing psi)"
-        )
+        ), "SOS integration failed (time does not monotonically increase with increasing psi)"
         return None
 
     def integrate_dxdv(
@@ -1790,7 +1721,7 @@ class Orbit:
         dxdv : numpy.ndarray
             Initial conditions for the orbit in cylindrical or rectangular coordinates. The shape of the array should be (\*input_shape, 4).
         t : list, numpy.ndarray or Quantity
-            List of equispaced times at which to compute the orbit. The initial condition is t[0].  (note that for method='odeint', method='dop853', and method='dop853_c', the time array can be non-equispaced).
+            List of equispaced times at which to compute the orbit. The initial condition is t[0].
         pot : Potential, DissipativeForce or list of such instances
             Gravitational field to integrate the orbit in.
         method : str, optional
@@ -1843,11 +1774,6 @@ class Orbit:
             t = conversion.parse_time(t, ro=self._ro, vo=self._vo)
         else:
             self._integrate_t_asQuantity = False
-        # Check that t is evenly spaced
-        if not self._check_array_evenlyspaced(t, method):
-            raise ValueError(
-                f"Input time array must be equally spaced for method {method}, use method='dop853_c', method='dop853', or method='odeint' instead for non-equispaced time arrays"
-            )
         if not dt is None:
             dt = conversion.parse_time(dt, ro=self._ro, vo=self._vo)
         # Parse dxdv
@@ -2642,26 +2568,6 @@ class Orbit:
             self._aA = actionAngle.actionAngleSpherical(pot=self._aAPot, **kwargs)
         return None
 
-    def _unbound_indx_and_aAkwargs(self):
-        """Internal function to compute the index of unbound orbits"""
-        if self.dim() == 2:
-            Einf = evaluateplanarPotentials(
-                toPlanarPotential(self._aAPot), _INF, use_physical=False
-            )
-        elif self.dim() == 3:
-            Einf = evaluatePotentials(self._aAPot, _INF, 0.0, use_physical=False)
-        if numpy.isnan(Einf):
-            Einf = numpy.inf  # Just try to proceed as best as possible, don't make assumptions about the potential
-        indx = self.E(pot=self._aAPot, use_physical=False, dontreshape=True) < Einf
-        if hasattr(self._aA, "_delta"):
-            if hasattr(self._aA._delta, "__len__"):
-                aAkwargs = {"delta": self._aA._delta[indx]}
-            else:
-                aAkwargs = {"delta": self._aA._delta}
-        else:
-            aAkwargs = {}
-        return indx, aAkwargs
-
     def _setup_EccZmaxRperiRap(self, pot=None, **kwargs):
         """Internal function to compute e,zmax,rperi,rap and cache it for reuse"""
         self._setupaA(pot=pot, **kwargs)
@@ -2680,34 +2586,19 @@ class Orbit:
             tz = numpy.zeros(self.size)
             tvz = numpy.zeros(self.size)
         # self.dim() == 1 error caught by _setupaA
-        # Exclude unbound orbits (aAkwargs deals with delta processing)
-        indx, aAkwargs = self._unbound_indx_and_aAkwargs()
         (
             self._aA_ecc,
             self._aA_zmax,
             self._aA_rperi,
             self._aA_rap,
-        ) = (
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
+        ) = self._aA.EccZmaxRperiRap(
+            self.R(use_physical=False, dontreshape=True),
+            self.vR(use_physical=False, dontreshape=True),
+            self.vT(use_physical=False, dontreshape=True),
+            tz,
+            tvz,
+            use_physical=False,
         )
-        if numpy.sum(indx) > 0:
-            (
-                self._aA_ecc[indx],
-                self._aA_zmax[indx],
-                self._aA_rperi[indx],
-                self._aA_rap[indx],
-            ) = self._aA.EccZmaxRperiRap(
-                self.R(use_physical=False, dontreshape=True)[indx],
-                self.vR(use_physical=False, dontreshape=True)[indx],
-                self.vT(use_physical=False, dontreshape=True)[indx],
-                tz[indx],
-                tvz[indx],
-                use_physical=False,
-                **aAkwargs,
-            )
         return None
 
     def _setup_actionsFreqsAngles(self, pot=None, **kwargs):
@@ -2728,8 +2619,6 @@ class Orbit:
             tz = numpy.zeros(self.size)
             tvz = numpy.zeros(self.size)
         # self.dim() == 1 error caught by _setupaA
-        # Exclude unbound orbits (aAkwargs deals with delta processing)
-        indx, aAkwargs = self._unbound_indx_and_aAkwargs()
         (
             self._aA_jr,
             self._aA_jp,
@@ -2740,38 +2629,15 @@ class Orbit:
             self._aA_wr,
             self._aA_wp,
             self._aA_wz,
-        ) = (
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
+        ) = self._aA.actionsFreqsAngles(
+            self.R(use_physical=False, dontreshape=True),
+            self.vR(use_physical=False, dontreshape=True),
+            self.vT(use_physical=False, dontreshape=True),
+            tz,
+            tvz,
+            self.phi(use_physical=False, dontreshape=True),
+            use_physical=False,
         )
-        if numpy.sum(indx) > 0:
-            (
-                self._aA_jr[indx],
-                self._aA_jp[indx],
-                self._aA_jz[indx],
-                self._aA_Or[indx],
-                self._aA_Op[indx],
-                self._aA_Oz[indx],
-                self._aA_wr[indx],
-                self._aA_wp[indx],
-                self._aA_wz[indx],
-            ) = self._aA.actionsFreqsAngles(
-                self.R(use_physical=False, dontreshape=True)[indx],
-                self.vR(use_physical=False, dontreshape=True)[indx],
-                self.vT(use_physical=False, dontreshape=True)[indx],
-                tz[indx],
-                tvz[indx],
-                self.phi(use_physical=False, dontreshape=True)[indx],
-                use_physical=False,
-                **aAkwargs,
-            )
         return None
 
     def _setup_actions(self, pot=None, **kwargs):
@@ -2795,28 +2661,15 @@ class Orbit:
         #    tz = numpy.zeros(self.size)
         #    tvz = numpy.zeros(self.size)
         # self.dim() == 1 error caught by _setupaA
-        # Exclude unbound orbits
-        indx, aAkwargs = self._unbound_indx_and_aAkwargs()
-        (
-            self._aA_jr,
-            self._aA_jp,
-            self._aA_jz,
-        ) = (
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
-            numpy.zeros_like(self.R(use_physical=False, dontreshape=True)) + numpy.nan,
+        self._aA_jr, self._aA_jp, self._aA_jz = self._aA(
+            self.R(use_physical=False, dontreshape=True),
+            self.vR(use_physical=False, dontreshape=True),
+            self.vT(use_physical=False, dontreshape=True),
+            tz,
+            tvz,
+            self.phi(use_physical=False, dontreshape=True),
+            use_physical=False,
         )
-        if numpy.sum(indx) > 0:
-            self._aA_jr[indx], self._aA_jp[indx], self._aA_jz[indx] = self._aA(
-                self.R(use_physical=False, dontreshape=True)[indx],
-                self.vR(use_physical=False, dontreshape=True)[indx],
-                self.vT(use_physical=False, dontreshape=True)[indx],
-                tz[indx],
-                tvz[indx],
-                self.phi(use_physical=False, dontreshape=True)[indx],
-                use_physical=False,
-                **aAkwargs,
-            )
         return None
 
     @shapeDecorator
@@ -5771,7 +5624,7 @@ class Orbit:
             and not "yrange" in kwargs
             and not kwargs.get("overplot", False)
         )
-        labels = kwargs.pop("label", [f"Orbit {ii + 1}" for ii in range(self.size)])
+        labels = kwargs.pop("label", [f"Orbit {ii+1}" for ii in range(self.size)])
         if self.size == 1 and isinstance(labels, str):
             labels = [labels]
         # Plot
@@ -5972,7 +5825,7 @@ class Orbit:
             and not "yrange" in kwargs
             and not kwargs.get("overplot", False)
         )
-        labels = kwargs.pop("label", [f"Orbit {ii + 1}" for ii in range(self.size)])
+        labels = kwargs.pop("label", [f"Orbit {ii+1}" for ii in range(self.size)])
         if self.size == 1 and isinstance(labels, str):
             labels = [labels]
         # Plot
@@ -6086,7 +5939,7 @@ class Orbit:
             and not "yrange" in kwargs
             and not kwargs.get("overplot", False)
         )
-        labels = kwargs.pop("label", [f"Orbit {ii + 1}" for ii in range(self.size)])
+        labels = kwargs.pop("label", [f"Orbit {ii+1}" for ii in range(self.size)])
         if self.size == 1 and isinstance(labels, str):
             labels = [labels]
         # Plot
@@ -6480,7 +6333,7 @@ class Orbit:
                     names[ii], xlabels[0], ylabels[0], tlabel
                 ),
             )
-            traces_cumul += f""",trace{str(2 * ii + 1)},trace{str(2 * ii + 2)}"""
+            traces_cumul += f""",trace{str(2*ii+1)},trace{str(2*ii+2)}"""
         x_data_list = """"""
         y_data_list = """"""
         t_data_list = """"""
@@ -6497,8 +6350,8 @@ class Orbit:
                 t_data_list += (
                     """data.time.slice(trace_slice_begin,trace_slice_end), """
                 )
-                trace_num_10_list += f"""{str(2 * jj * self.size + 2 * ii + 1 - 1)}, """
-                trace_num_20_list += f"""{str(2 * jj * self.size + 2 * ii + 2 - 1)}, """
+                trace_num_10_list += f"""{str(2*jj*self.size + 2 * ii + 1 - 1)}, """
+                trace_num_20_list += f"""{str(2*jj*self.size + 2 * ii + 2 - 1)}, """
         # Additional traces for additional plots
         if len(d1s) > 1:
             setup_trace2 = """
@@ -6544,9 +6397,7 @@ class Orbit:
                     names[0], xlabels[1], ylabels[1], tlabel
                 ),
             )
-            traces_cumul += (
-                f""",trace{str(2 * self.size + 1)},trace{str(2 * self.size + 2)}"""
-            )
+            traces_cumul += f""",trace{str(2*self.size+1)},trace{str(2*self.size+2)}"""
             for ii in range(1, self.size):
                 setup_trace2 += """
     let trace{trace_num_1}= {{
@@ -6594,7 +6445,7 @@ class Orbit:
                         names[ii], xlabels[1], ylabels[1], tlabel
                     ),
                 )
-                traces_cumul += f""",trace{str(2 * self.size + 2 * ii + 1)},trace{str(2 * self.size + 2 * ii + 2)}"""
+                traces_cumul += f""",trace{str(2*self.size+2*ii+1)},trace{str(2*self.size+2*ii+2)}"""
         else:  # else for "if there is a 2nd panel"
             setup_trace2 = """
     let traces= [{traces_cumul}];
@@ -6643,9 +6494,7 @@ class Orbit:
                     names[0], xlabels[2], ylabels[2], tlabel
                 ),
             )
-            traces_cumul += (
-                f""",trace{str(4 * self.size + 1)},trace{str(4 * self.size + 2)}"""
-            )
+            traces_cumul += f""",trace{str(4*self.size+1)},trace{str(4*self.size+2)}"""
             for ii in range(1, self.size):
                 setup_trace3 += """
     let trace{trace_num_1}= {{
@@ -6695,7 +6544,7 @@ class Orbit:
                         names[ii], xlabels[2], ylabels[0], tlabel
                     ),
                 )
-                traces_cumul += f""",trace{str(4 * self.size + 2 * ii + 1)},trace{str(4 * self.size + 2 * ii + 2)}"""
+                traces_cumul += f""",trace{str(4*self.size+2*ii+1)},trace{str(4*self.size+2*ii+2)}"""
             setup_trace3 += """
             let traces= [{traces_cumul}];
             """.format(traces_cumul=traces_cumul)
@@ -7231,8 +7080,8 @@ if ( typeof window.require == 'undefined' ) {{
         if not is_kpc:
             mw_bg_surface_scale /= self._ro
         mw_bg_surface = f"""let mw_bg = {{
-            x: {json.dumps((numpy.linspace(-1, 1, 50) * mw_bg_surface_scale).tolist())},
-            y: {json.dumps((numpy.linspace(-1, 1, 50) * mw_bg_surface_scale).tolist())},
+            x: {json.dumps((numpy.linspace(-1, 1, 50)*mw_bg_surface_scale).tolist())},
+            y: {json.dumps((numpy.linspace(-1, 1, 50)*mw_bg_surface_scale).tolist())},
             z: {json.dumps((numpy.zeros((50, 50))).tolist())},
             colorscale: [[0.0,"rgba(0, 0, 0, 1)"],[0.09090909090909091,"rgba(16, 16, 16, 1)"],[0.18181818181818182,"rgba(38, 38, 38, 0.9)"],[0.2727272727272727,"rgba(59, 59, 59, 0.8)"],[0.36363636363636365,"rgba(81, 80, 80, 0.7)"],[0.45454545454545453,"rgba(102, 101, 101, 0.6)"],[0.5454545454545454,"rgba(124, 123, 122, 0.5)"],[0.6363636363636364,"rgba(146, 146, 145, 0.4)"],[0.7272727272727273,"rgba(171, 171, 170, 0.3)"],[0.8181818181818182,"rgba(197, 197, 195, 0.2)"],[0.9090909090909091,"rgba(224, 224, 223, 0.1)"],[1.0,"rgba(254, 254, 253, 0.05)"]],
             surfacecolor: [
@@ -7339,7 +7188,7 @@ if ( typeof window.require == 'undefined' ) {{
                     names[ii], xlabels[0], ylabels[0], zlabels[0], tlabel
                 ),
             )
-            traces_cumul += f""",trace{str(2 * ii + 1)},trace{str(2 * ii + 2)}"""
+            traces_cumul += f""",trace{str(2*ii+1)},trace{str(2*ii+2)}"""
         x_data_list = """"""
         y_data_list = """"""
         z_data_list = """"""
@@ -7364,8 +7213,8 @@ if ( typeof window.require == 'undefined' ) {{
                 t_data_list += (
                     """data.time.slice(trace_slice_begin,trace_slice_end), """
                 )
-                trace_num_10_list += f"""{str(2 * jj * self.size + 2 * ii + 1 - 1)}, """
-                trace_num_20_list += f"""{str(2 * jj * self.size + 2 * ii + 2 - 1)}, """
+                trace_num_10_list += f"""{str(2*jj*self.size + 2 * ii + 1 - 1)}, """
+                trace_num_20_list += f"""{str(2*jj*self.size + 2 * ii + 2 - 1)}, """
         return HTML(
             """
     <style>
@@ -7632,7 +7481,9 @@ def _from_name_oneobject(name, obs):
         # check that the necessary coordinates have been found
         missing = simbad_table.mask
         if any(missing["ra", "dec", "pmra", "pmdec", "rvz_radvel"][0]):
-            raise ValueError(f"failed to find some coordinates for {name} in SIMBAD")
+            raise ValueError(
+                "failed to find some coordinates for {} in " "SIMBAD".format(name)
+            )
         ra, dec, pmra, pmdec, vlos = simbad_table[
             "ra", "dec", "pmra", "pmdec", "rvz_radvel"
         ][0]
@@ -7661,7 +7512,9 @@ def _from_name_oneobject(name, obs):
         if any(missing["RA_d", "DEC_d", "PMRA", "PMDEC", "RV_VALUE"][0]) or all(
             missing["PLX_VALUE", "Distance_distance"][0]
         ):
-            raise ValueError(f"failed to find some coordinates for {name} in SIMBAD")
+            raise ValueError(
+                "failed to find some coordinates for {} in " "SIMBAD".format(name)
+            )
         ra, dec, pmra, pmdec, vlos = simbad_table[
             "RA_d", "DEC_d", "PMRA", "PMDEC", "RV_VALUE"
         ][0]
@@ -8265,6 +8118,6 @@ def _check_potential_dim(orb, pot):
 def _check_consistent_units(orb, pot):
     if pot is None:
         return None
-    assert physical_compatible(orb, pot), (
-        "Physical conversion for the Orbit object is not consistent with that of the Potential given to it"
-    )
+    assert physical_compatible(
+        orb, pot
+    ), "Physical conversion for the Orbit object is not consistent with that of the Potential given to it"

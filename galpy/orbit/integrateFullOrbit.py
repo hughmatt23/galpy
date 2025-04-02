@@ -138,7 +138,6 @@ def _parse_pot(pot, potforactions=False, potfortorus=False):
         elif isinstance(p, potential.PowerSphericalPotentialwCutoff):
             pot_type.append(15)
             pot_args.extend([p._amp, p.alpha, p.rc])
-            pot_args.extend([0.0, 0.0])  # for caching
         elif isinstance(p, potential.MN3ExponentialDiskPotential):
             # Three Miyamoto-Nagai disks
             npot += 2
@@ -352,6 +351,31 @@ def _parse_pot(pot, potforactions=False, potfortorus=False):
         elif isinstance(p, potential.NullPotential):
             pot_type.append(40)
             # No arguments, zero forces
+
+        ################################################################
+        ################################################################
+        elif isinstance(p, potential.MoccaTimeTablePotential):
+            pot_type.append(41)
+            nr = len(p.radius_grid)
+            nt = len(p.time_grid)
+            pot_args.append(nr)  # Number of radius grid points
+            
+            pot_args.append(nt)  # Number of time grid points
+            pot_args.extend(p.radius_grid)  # Radius grid
+            pot_args.extend(p.time_grid)  # Time grid
+            pot_args.extend(p.potentials)
+            pot_args.extend(p.kepAmp_grid)
+            pot_args.extend([p._amp,p._rmin, p._rmax, nt])
+            pot_args.extend(p.time_grid)
+            pot_args.extend(p.kepAmp_grid)
+            # print("python pot_args:", pot_args)
+            # for time_slice in p.potentials:
+                # pot_args.extend(time_slice)  # Flatten potential grid
+        ################################################################
+        ################################################################
+
+
+
         ############################## WRAPPERS ###############################
         elif isinstance(p, potential.DehnenSmoothWrapperPotential):
             pot_type.append(-1)
@@ -535,6 +559,11 @@ def integrateFullOrbit_c(
     int_method_c = _parse_integrator(int_method)
     if dt is None:
         dt = -9999.99
+    
+    
+    ######
+    # print("vxvv in python:", yo[3:])
+    ######
 
     # Set up result array
     result = numpy.empty((nobj, len(t), 6))

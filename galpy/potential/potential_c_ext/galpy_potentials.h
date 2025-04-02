@@ -61,6 +61,7 @@ struct potentialArg{
   int nspline1d;
   gsl_interp_accel ** acc1d;
   gsl_spline ** spline1d;
+  gsl_interp ** interp1d;
   // 2D interpolation
   interp_2d * i2d;
   gsl_interp_accel * accx;
@@ -639,6 +640,20 @@ double NonInertialFrameForcePlanarphitorque(double,double,double,
 double NonInertialFrameForcezforce(double,double,double,double,
 						 		   struct potentialArg *,
 						 		   double,double,double);
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+double MoccaTimeTablePotentialrevaluate(double, double, struct potentialArg *);
+double MoccaTimeTablePotentialrforce(double, double, struct potentialArg *);
+double MoccaTimeTablePotentialr2deriv(double, double, struct potentialArg *);
+double MoccaTimeTablePotentialrdens(double, double, struct potentialArg *);
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
 
 //////////////////////////////// WRAPPERS /////////////////////////////////////
 //DehnenSmoothWrapperPotential

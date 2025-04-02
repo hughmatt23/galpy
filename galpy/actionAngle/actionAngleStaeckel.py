@@ -214,13 +214,7 @@ class actionAngleStaeckel(actionAngle):
             else:
                 # Set up the actionAngleStaeckelSingle object
                 aASingle = actionAngleStaeckelSingle(
-                    R[0],
-                    vR[0],
-                    vT[0],
-                    z[0],
-                    vz[0],
-                    pot=self._pot,
-                    delta=delta[0] if hasattr(delta, "__len__") else delta,
+                    R[0], vR[0], vT[0], z[0], vz[0], pot=self._pot, delta=delta
                 )
                 return (
                     numpy.atleast_1d(aASingle.JR(**copy.copy(kwargs))),
