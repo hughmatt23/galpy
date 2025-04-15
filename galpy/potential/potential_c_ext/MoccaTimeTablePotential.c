@@ -201,6 +201,12 @@ double MoccaTimeTablePotentialrforce(double r, double t,
 
     // printf("Eval Grad Force: %f\n", force);
 
+    // printf("Radius: %f\n", r);
+    // printf("Radius Min: %f\n", rmin);
+    // printf("Time: %f\n", t);
+    // printf("Time Min: %f\n", tmin);
+    // fflush(stdout);
+
     // Handle cases where r or t is out of bounds
     if (r < rmin) {
         return 0.0;

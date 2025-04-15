@@ -1,4 +1,5 @@
 from .SphericalPotential import SphericalPotential
+from ..util import conversion
 from astropy import units
 import numpy as np
 import numba
@@ -18,11 +19,13 @@ class MoccaTimeTablePotential(SphericalPotential):
         print("All Radii:", all_radii)
         self.radii = np.linspace(np.min(all_radii), np.max(all_radii), num_radius_points)
         print("Stored Radii", self.radii)
-        self.timePoints = times
+
+        self.timePoints = [conversion.parse_time(t, ro=self._ro, vo=self._vo) for t in times]
+
 
         # Create a 3D array for potential values
         self.potential_3d = np.zeros((len(self.timePoints), len(self.radii)))
-        print(kepAmp)
+        print("kep amp:", kepAmp)
         self.massInterp = interp1d(times, kepAmp)
         # print("Mass Interp at t=0 (10000):", self.massInterp(0))
         # print("Mass Interp at t=500 (10500):", self.massInterp(500))
