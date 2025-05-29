@@ -26,7 +26,7 @@ class MoccaTimeTablePotential(SphericalPotential):
         # Create a 3D array for potential values
         self.potential_3d = np.zeros((len(self.timePoints), len(self.radii)))
         print("kep amp:", kepAmp)
-        self.massInterp = interp1d(times, kepAmp)
+        self.massInterp = interp1d(self.timePoints, kepAmp)
         # print("Mass Interp at t=0 (10000):", self.massInterp(0))
         # print("Mass Interp at t=500 (10500):", self.massInterp(500))
         # print("Mass Interp at t=1000 (11000):", self.massInterp(1000))
