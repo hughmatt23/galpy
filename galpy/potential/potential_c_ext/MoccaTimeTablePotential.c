@@ -23,9 +23,6 @@ double MoccaTimeTablePotentialrevaluate(double r, double t,
     double tmin = times[0];
     double tmax = times[ntime-1];
 
-    printf("Mocca reval\n");
-    fflush(stdout);
-
     // Allocate a separate array (optional if you need isolation)
     // double *timesArray = (double *)malloc(ntime * sizeof(double));
     // memcpy(timesArray, times, ntime * sizeof(double)); // Copy only ntime elements
@@ -108,104 +105,15 @@ double MoccaTimeTablePotentialrforce(double r, double t,
         mass = gsl_interp_eval(*potentialArgs->interp1d, timesArray, massArray, t, *potentialArgs->acc1d);
     }
 
-
-    // // Handle cases where r or t is out of bounds
-    // if (r < rmin) {
-    //     return 0.0;
-    // } else if (r > rmax) {
-    //     return - (mass) / (r * r);
-    // }
-
-
-    
     // Use numerical differentiation for the radial force
     // At small radii the step size is small to match, but as the stars escape and r increases, the max step size is set by rmax
     double dr = fmin(0.003 * r, 0.003 * rmax);;  // Small step for numerical differentiation
-
-    // printf("Test Interp %f\n", interp_2d_eval(potentialArgs->i2d, r, t, potentialArgs->accx, potentialArgs->accy));
 
     double fplus = interp_2d_eval(potentialArgs->i2d, t, r+dr, potentialArgs->accx, potentialArgs->accy);
     double fminus = interp_2d_eval(potentialArgs->i2d, t, r-dr, potentialArgs->accx, potentialArgs->accy);
     double fplus2 = interp_2d_eval(potentialArgs->i2d, t, r+2*dr, potentialArgs->accx, potentialArgs->accy);
     double fminus2 = interp_2d_eval(potentialArgs->i2d, t, r-2*dr, potentialArgs->accx, potentialArgs->accy);
     double force = -(-fplus2 + 8*fplus - 8*fminus + fminus2)/(12*dr);
-
-    // double grad[2];
-    // interp_2d_eval_grad(potentialArgs->i2d, r,t, grad, potentialArgs->accx, potentialArgs->accy);
-    // double force = -grad[0];
-
-    // if (!atomic_load_explicit(&initialized, memory_order_relaxed)) { 
-    //     if (!atomic_exchange_explicit(&initialized, true, memory_order_acquire)) {  
-    //         FILE *file;
-    //         file = fopen("force_output.txt", "w"); // Overwrite on first call
-    //         if (file) {
-    //             fprintf(file, "# r\tPotential(r)\tGrad(r)\tForce(r)\n"); // Add header
-
-    //             int points = 100;
-    //             for (int i = 0; i<points; i++){
-    //                 double rad = rmin+i*(rmax-rmin)/(points-1);
-
-    //                 double potentialCalc = interp_2d_eval(potentialArgs->i2d, 0, rad, potentialArgs->accx, potentialArgs->accy);
-
-    //                 double gradTemp[2];
-    //                 interp_2d_eval_grad(potentialArgs->i2d, 0, rad, gradTemp, potentialArgs->accx, potentialArgs->accy);
-    //                 double forceCalc = -gradTemp[0];
-
-    //                 double drT = fmin(0.0003 * rad, 0.0003 * rmax); // Small step for numerical differentiation
-
-
-
-    //                 double fplusT = interp_2d_eval(potentialArgs->i2d, t, rad+drT, potentialArgs->accx, potentialArgs->accy);
-    //                 double fminusT = interp_2d_eval(potentialArgs->i2d, t, rad-drT, potentialArgs->accx, potentialArgs->accy);
-    //                 double fplus2T = interp_2d_eval(potentialArgs->i2d, t, rad+2*drT, potentialArgs->accx, potentialArgs->accy);
-    //                 double fminus2T = interp_2d_eval(potentialArgs->i2d, t, rad-2*drT, potentialArgs->accx, potentialArgs->accy);
-    //                 double forceT = -(-fplus2T + 8*fplusT - 8*fminusT + fminus2T)/(12*drT);
-
-    //                 fprintf(file, "%f\t%f\t%f\t%f\n", rad, potentialCalc, forceCalc, forceT);
-    //             }
-    //             fclose(file);
-    //         }
-    //         else{
-    //             fprintf(stderr, "Couldn't open file for writing");
-    //         }
-
-    //     }
-    // }
-
-    // // **Debugging Output: Write Force Data
-    // // printf("Time t: %f\n", t);
-    // if (t == 0.0) {
-    //     FILE *file;
-    //     file = fopen("force_output.txt", "a"); // Append for subsequent calls
-    //     if (file) {
-    //         fprintf(file, "%f\t%f\n", r, force);
-    //         fclose(file);
-    //     }
-    // }
-
-    // static int forcePlot = 0;
-    // if(!forcePlot)
-    
-    // printf("Radius %f\n", r);
-    // printf("Radius + r1 %f\n", r1);
-    // printf("Radius + r2 %f\n", r2);
-    // printf("fplus %f\n", fplus);
-    // printf("fminus %f\n", fminus);
-    // printf("Force Calc: %f\n", -(fplus - fminus) / (2 * dr));
-    // printf("r, rmax %f%f\n", r, rmax);
-    // printf("Kep Pot: %f\n", -(mass)/(r));
-    // printf("Potential r=0:%f\n", interp_2d_eval(potentialArgs->i2d, 0, t, potentialArgs->accx, potentialArgs->accy));
-    // printf("Potential Energy:%f\n", interp_2d_eval(potentialArgs->i2d, r, t, potentialArgs->accx, potentialArgs->accy));
-    // fflush(stdout);
-
-
-    // printf("Eval Grad Force: %f\n", force);
-
-    // printf("Radius: %f\n", r);
-    // printf("Radius Min: %f\n", rmin);
-    // printf("Time: %f\n", t);
-    // printf("Time Min: %f\n", tmin);
-    // fflush(stdout);
 
     // Handle cases where r or t is out of bounds
     if (r < rmin) {
@@ -229,9 +137,6 @@ double MoccaTimeTablePotentialr2deriv(double r, double t,
     double *masses = times + ntime;    // Start of mass array
     double tmin = times[0];
     double tmax = times[ntime-1];
-
-    printf("Mocca r2deriv\n");
-    fflush(stdout);
 
     // Allocate a separate array (optional if you need isolation)
     // double *timesArray = (double *)malloc(ntime * sizeof(double));
@@ -278,9 +183,6 @@ double MoccaTimeTablePotentialr2deriv(double r, double t,
 
 double MoccaTimeTablePotentialrdens(double r, double t,
                                     struct potentialArg * potentialArgs) {
-    // Use the second derivative and radial force to estimate the density
-    printf("rdens");
-    fflush(stdout);
     return M_1_PI / 4.0 * (
         MoccaTimeTablePotentialr2deriv(r, t, potentialArgs) -
         2.0 * MoccaTimeTablePotentialrforce(r, t, potentialArgs) / r

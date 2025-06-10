@@ -10,6 +10,8 @@ class MoccaTimeTablePotential(SphericalPotential):
     def __init__(self, potTableList, times, kepAmp, amp=1.0, ro=None, vo=None, num_radius_points=1000000):
         SphericalPotential.__init__(self, amp=amp, ro=ro, vo=vo)
         self.hasC=True
+        self.hasC_dxdv=True
+        self.hasC_dens=True
 
         self.kepAmp = kepAmp
         self.eps = 0.01
