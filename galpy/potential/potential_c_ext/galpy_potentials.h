@@ -648,6 +648,7 @@ double MoccaTimeTablePotentialrevaluate(double, double, struct potentialArg *);
 double MoccaTimeTablePotentialrforce(double, double, struct potentialArg *);
 double MoccaTimeTablePotentialr2deriv(double, double, struct potentialArg *);
 double MoccaTimeTablePotentialrdens(double, double, struct potentialArg *);
+double MoccaTimeTablePotentialmass(double,struct potentialArg *);
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
