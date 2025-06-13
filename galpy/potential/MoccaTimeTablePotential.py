@@ -9,9 +9,6 @@ import matplotlib.pyplot as plt
 class MoccaTimeTablePotential(SphericalPotential):
     def __init__(self, potTableList, times, kepAmp, amp=1.0, ro=None, vo=None, num_radius_points=1000000):
         SphericalPotential.__init__(self, amp=amp, ro=ro, vo=vo)
-        self.hasC=True
-        self.hasC_dxdv=True
-        self.hasC_dens=True
 
         self.kepAmp = kepAmp
         self.eps = 0.01
@@ -68,10 +65,12 @@ class MoccaTimeTablePotential(SphericalPotential):
         self._amp = amp
         # self._total_mass = self.kepAmp  # Keplerian amplitude (mass)
 
-
-
         # Create a RegularGridInterpolator for fast lookup
         self.interpolator = RegularGridInterpolator((self.timePoints, self.radii), self.potential_3d, bounds_error=False, fill_value=None)
+
+        self.hasC = True
+        self.hasC_dxdv = True
+        self.hasC_dens = True
 
 
 
@@ -116,6 +115,3 @@ class MoccaTimeTablePotential(SphericalPotential):
         d2phi_dr2_keplerian = 2 * mass / (r ** 3)
         result = np.where(r <= self.radii[-1], d2phi_dr2_within, d2phi_dr2_keplerian)
         return result[0] if result.size == 1 else result
-    
-    def _mass(self,t=0.):
-        return self.massInterp(t)
