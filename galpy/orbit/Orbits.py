@@ -1343,6 +1343,8 @@ class Orbit:
         t,
         pot,
         method="symplec4_c",
+        rtol=None,
+        atol=None,
         progressbar=True,
         dt=None,
         numcores=_NUMCORES,
@@ -1485,7 +1487,7 @@ class Orbit:
                     )
                 else:
                     out, msg = integrateFullOrbit_c(
-                        self._pot, vxvvs, t, method, progressbar=progressbar, dt=dt
+                        self._pot, vxvvs, t, method, rtol, atol, progressbar=progressbar, dt=dt
                     )
 
                 if self.phasedim() == 3 or self.phasedim() == 5:
